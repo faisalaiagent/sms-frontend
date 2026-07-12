@@ -22,7 +22,7 @@ import { API_ENDPOINTS } from '@/constants';
 import type { ApiSuccess, Class } from '@/types';
 import { toast } from 'sonner';
 
-interface ClassWithSections extends Class {
+interface ClassWithSections extends Omit<Class, 'sections'> {
   sections: Array<{
     id: string;
     name: string;
