@@ -32,6 +32,7 @@ interface FeeStructure {
   amount: number;
   dueDate: string;
   lateFeeAmount: number;
+  lateFeeGraceDays: number;
   class?: { name: string };
   academicYear: { name: string };
   _count: { studentFees: number };
