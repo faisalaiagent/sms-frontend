@@ -79,7 +79,7 @@ export function Sidebar() {
       {/* User profile at bottom */}
       <div className="border-t p-4">
         <div className="flex items-center gap-3">
-          <UserButton afterSignOutUrl="/sign-in" />
+          <UserButton />
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">School Admin</p>
             <p className="text-xs text-muted-foreground truncate">Administrator</p>
