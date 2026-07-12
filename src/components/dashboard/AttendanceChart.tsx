@@ -67,7 +67,7 @@ export function AttendanceChart({ data, loading }: AttendanceChartProps) {
                 axisLine={false}
               />
               <Tooltip
-                formatter={(value: number) => [`${value}%`, 'Present']}
+                formatter={(value: number | undefined) => [`${value ?? 0}%`, 'Present']}
                 contentStyle={{
                   fontSize: 12,
                   borderRadius: 6,
