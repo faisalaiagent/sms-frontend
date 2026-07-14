@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Download } from 'lucide-react';
+import { Plus, Search, Download, Upload  } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -149,6 +149,12 @@ export default function StudentsPage() {
           <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
             Export
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/students/import">
+              <Upload className="mr-2 h-4 w-4" />
+              Import CSV
+            </Link>
           </Button>
           <Button asChild>
             <Link href={ROUTES.STUDENTS_NEW}>
