@@ -64,7 +64,7 @@ export default function StudentsPage() {
       // same filters currently applied on screen.
       const params = new URLSearchParams();
       params.set('page', '1');
-      params.set('limit', '1000');
+      params.set('limit', '100');
       if (search) params.set('search', search);
       if (classId) params.set('classId', classId);
       if (sectionId) params.set('sectionId', sectionId);
