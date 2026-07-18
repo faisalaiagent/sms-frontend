@@ -3,7 +3,8 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Download, Upload  } from 'lucide-react';
+import { useAuth } from '@clerk/nextjs';
+import { Plus, Search, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,16 +22,20 @@ import { useStudents, useArchiveStudent } from '@/hooks/useStudents';
 import { useClasses, useSections } from '@/hooks/useClasses';
 import { ROUTES } from '@/constants';
 import { getInitials, formatDate } from '@/lib/utils';
+import { api, attachAuthInterceptor } from '@/lib/api';
 import type { Student } from '@/types';
+import { toast } from 'sonner';
 
 export default function StudentsPage() {
   const router = useRouter();
+  const { getToken } = useAuth();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [classId, setClassId] = useState('');
   const [sectionId, setSectionId] = useState('');
   const [status, setStatus] = useState('ACTIVE');
   const [archiveId, setArchiveId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const { data, isLoading } = useStudents({
     page,
@@ -49,6 +54,73 @@ export default function StudentsPage() {
     setSearch(e.target.value);
     setPage(1);
   }, []);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      attachAuthInterceptor(() => getToken());
+
+      // Pull every matching row (not just the current page), using the
+      // same filters currently applied on screen.
+      const params = new URLSearchParams();
+      params.set('page', '1');
+      params.set('limit', '1000');
+      if (search) params.set('search', search);
+      if (classId) params.set('classId', classId);
+      if (sectionId) params.set('sectionId', sectionId);
+      if (status) params.set('status', status);
+
+      const res = await api.get(`/students?${params.toString()}`);
+      const students = (res.data as { data: Student[] }).data;
+
+      if (!students || students.length === 0) {
+        toast.error('No students match the current filters to export.');
+        return;
+      }
+
+      const headers = [
+        'admission_number', 'full_name', 'gender', 'date_of_birth',
+        'class_name', 'section_name', 'parent_name', 'parent_phone',
+        'parent_email', 'address', 'emergency_contact', 'status', 'admission_date',
+      ];
+
+      const escapeCsv = (val: unknown) => {
+        const str = String(val ?? '');
+        return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+      };
+
+      const rows = students.map((s) => [
+        s.admissionNumber,
+        s.fullName,
+        s.gender,
+        s.dateOfBirth?.split('T')[0] ?? '',
+        s.section?.class?.name ?? '',
+        s.section?.name ?? '',
+        s.parentName,
+        s.parentPhone,
+        s.parentEmail ?? '',
+        s.address ?? '',
+        s.emergencyContact ?? '',
+        s.status,
+        s.admissionDate?.split('T')[0] ?? '',
+      ].map(escapeCsv).join(','));
+
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `students_export_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${students.length} student(s)`);
+    } catch {
+      toast.error('Failed to export students. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const columns: Column<Student>[] = [
     {
@@ -146,9 +218,14 @@ export default function StudentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={exporting}
+          >
             <Download className="mr-2 h-4 w-4" />
-            Export
+            {exporting ? 'Exporting...' : 'Export'}
           </Button>
           <Button variant="outline" asChild>
             <Link href="/students/import">
